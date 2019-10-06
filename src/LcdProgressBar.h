@@ -17,14 +17,14 @@
 #define LcdProgressBar_h
 
 #include "Arduino.h"
-#include <LiquidCrystal.h>
+#include <LiquidCrystal_I2C.h>
 
 /**
  * Version
  * (Major:non-compatible changes) . (Minor:backwards compatible changes) . (Patch:bugfix releases)
  * @refer http://semver.org/
  */
-#define LCDPROGRESSBAR_VERSION  "1.0.1"
+#define LCDPROGRESSBAR_VERSION "1.0.2"
 
 /**
  * Debug mode?
@@ -35,57 +35,69 @@
 
 class LcdProgressBar
 {
-  public:
-    /**
+public:
+  /**
      * Contructor
-     * @param lcd     LiquidCrystal instance (must pass the pointer via prefix &, e.g. &lcd)
+     * @param lcd     LiquidCrystal_I2C instance (must pass the pointer via prefix &, e.g. &lcd)
      * @param row     Which row to display. 0 is the 1st row, 1 is the second, ...
-     * @param numCols Number of columns your LCD has (16, 8, ...)
+     * @param bar_char Bar characters
      */
-    LcdProgressBar(LiquidCrystal* lcd, int row = 0, int numCols = 16);
+  LcdProgressBar(LiquidCrystal_I2C *lcd, int row = 0, int numCols = 16);
 
-    /**
+  /**
      * Set the starting value of your progress bar (0 by default)
      * @param minValue Starting value
      */
-    void setMinValue(unsigned long minValue);
+  void setMinValue(unsigned long minValue);
 
-    /**
+  /**
      * Set the finishing value of your progress bar (must be provided)
      * @param minValue Finishing value
      */
-    void setMaxValue(unsigned long maxValue);
+  void setMaxValue(unsigned long maxValue);
 
-    /**
+  /**
      * Draw the progress bar on the LCD
      * @param value Value to draw
      */
-    void draw(unsigned long value);
+  void draw(unsigned long value, bool re = false);
 
-    /**
+  /**
+     * Draw the progress bar, even if there is no change on value
+     * @param value Value to draw
+     */
+  void reDraw(unsigned long value);
+
+  /**
      * Alias on draw() (LcdBarGraph style :))
      */
-    void drawValue(unsigned long value);
+  void drawValue(unsigned long value);
 
-  private:
-    //-- LiquidCrystal instance
-    LiquidCrystal* _lcd;
+private:
+//-- LiquidCrystal instance
+#ifdef LiquidCrystal_I2C_h
+  LiquidCrystal_I2C *_lcd;
+#endif
+#ifdef LiquidCrystal_h
+  LiquidCrystal *_lcd;
+#endif
 
-    //-- Starting value
-    unsigned long _minValue = 0;
-    //-- Finishing value
-    unsigned long _maxValue;
-    //-- Computed finishing value (optimization purpose only, to avoid some repetitive maths)
-    unsigned long _computedMaxValue;
+  //-- Starting value
+  unsigned long _minValue = 0;
+  //-- Finishing value
+  unsigned long _maxValue;
+  //-- Computed finishing value (optimization purpose only, to avoid some repetitive maths)
+  unsigned long _computedMaxValue;
 
-    //-- Number of columns your LCD has (16, 8, ...)
-    int _numCols = 0;
-    //-- Computed number of columns (optimization purpose only, to avoid some repetitive maths)
-    int _computedNumCols = 0;
-    //-- Which row to display. 0 is the 1st row, 1 is the second, ...
-    int _row = 0;
-    //-- Which position is the progress bar: optimization purpose only; refresh LCD only on change
-    byte _previousProgressPos = -1;
+  //-- Number of columns your LCD has (16, 8, ...)
+  int _numCols = 0;
+  //-- Computed number of columns (optimization purpose only, to avoid some repetitive maths)
+  int _computedNumCols = 0;
+  //-- Which row to display. 0 is the 1st row, 1 is the second, ...
+  int _row = 0;
+  //-- Which position is the progress bar: optimization purpose only; refresh LCD only on change
+
+  byte _previousProgressPos = -1;
 };
 
 #endif

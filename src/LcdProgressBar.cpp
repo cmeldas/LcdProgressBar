@@ -37,15 +37,29 @@
 #include "Arduino.h"
 #include "LcdProgressBar.h"
 
+#ifdef LiquidCrystal_I2C_h
+#include <LiquidCrystal_I2C.h>
+
+LcdProgressBar::LcdProgressBar(LiquidCrystal_I2C *lcd, int row, int numCols)
+{
+  _lcd = lcd;
+  _numCols = numCols;
+  _computedNumCols = numCols - 2;
+  _row = row;
+}
+#endif
+
+#ifdef LiquidCrystal_h
 #include <LiquidCrystal.h>
 
-LcdProgressBar::LcdProgressBar(LiquidCrystal* lcd, int row, int numCols)
+LcdProgressBar::LcdProgressBar(LiquidCrystal *lcd, int row, int numCols)
 {
-  _lcd             = lcd;
-  _numCols         = numCols;
+  _lcd = lcd;
+  _numCols = numCols;
   _computedNumCols = numCols - 2;
-  _row             = row;
+  _row = row;
 }
+#endif
 
 void LcdProgressBar::setMinValue(unsigned long minValue)
 {
@@ -54,11 +68,12 @@ void LcdProgressBar::setMinValue(unsigned long minValue)
 
 void LcdProgressBar::setMaxValue(unsigned long maxValue)
 {
-  if (maxValue <= _minValue) {
+  if (maxValue <= _minValue)
+  {
     Serial.println("LcdProgressBar::setMaxValue() error: maxValue <= _minValue");
     exit(100);
   }
-  _maxValue         = maxValue;
+  _maxValue = maxValue;
   _computedMaxValue = maxValue - _minValue;
 }
 
@@ -67,40 +82,62 @@ void LcdProgressBar::drawValue(unsigned long value)
   draw(value);
 }
 
-void LcdProgressBar::draw(unsigned long value)
+void LcdProgressBar::reDraw(unsigned long value)
+{
+  draw(value, true);
+}
+
+void LcdProgressBar::draw(unsigned long value, bool re)
 {
 
 #ifdef LCDPROGRESSBAR_DEBUG
-  Serial.print("value="); Serial.print(value);
-  Serial.print(", _minValue="); Serial.print(_minValue);
-  Serial.print(", _maxValue="); Serial.println(_maxValue);
+  Serial.print("value=");
+  Serial.print(value);
+  Serial.print(", _minValue=");
+  Serial.print(_minValue);
+  Serial.print(", _maxValue=");
+  Serial.println(_maxValue);
 #endif
 
   //byte progressPos = map(value, minValue, maxValue, 2, 14);
   byte progressPos = 0;
-  if (value > _minValue) {
-    if (value >= _maxValue) {
+  const char bar_char[] = "[= ]";
+  if (value > _minValue)
+  {
+    if (value >= _maxValue)
+    {
       progressPos = _computedNumCols;
-    } else {
-      progressPos = round((float)(value - _minValue) / (float)(_computedMaxValue) * _computedNumCols);
+    }
+    else
+    {
+      progressPos = round((float)(value - _minValue) / (float)(_computedMaxValue)*_computedNumCols);
     }
   }
 
-  if (_previousProgressPos != progressPos) {
+  if ((_previousProgressPos != progressPos) || re)
+  {
 #ifdef LCDPROGRESSBAR_DEBUG
-    Serial.print("> progressPos="); Serial.println(progressPos);
+    Serial.print("> progressPos=");
+    Serial.print(progressPos);
 #endif
     _previousProgressPos = progressPos;
     char progressBarString[_numCols + 1];
-    memset(progressBarString, '.', sizeof(progressBarString));
-    progressBarString[0] = '[';
-    progressBarString[_numCols-1] = ']';
+    memset(progressBarString, bar_char[2], sizeof(progressBarString) - 1);
+    progressBarString[0] = bar_char[0];
+    progressBarString[_numCols - 1] = bar_char[3];
+    progressBarString[_numCols] = 0;            //last char must be NULL, othervise lcd.print fails
 
-    for (int i = 1; i <= progressPos; ++i) {
-      progressBarString[i] = '=';
+    for (int i = 1; i <= progressPos; ++i)
+    {
+      progressBarString[i] = bar_char[1];
     }
 
     _lcd->setCursor(0, _row);
     _lcd->print(progressBarString);
+#ifdef LCDPROGRESSBAR_DEBUG
+    Serial.print("> progressstring=");
+    Serial.print(progressBarString);
+    Serial.println("END");
+#endif
   }
 }
